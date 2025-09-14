@@ -7,26 +7,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.mapbox.maps.Style
-import com.mapbox.maps.plugin.Plugin
-import com.mapbox.maps.plugin.gestures.gestures
-import com.mapbox.maps.plugin.locationcomponent.location
-import com.mapbox.maps.plugin.scalebar.scalebar
 import com.mapbox.maps.compose.*
 import com.mapbox.maps.compose.annotation.*
-import com.mapbox.maps.compose.ui.*
+import com.mapbox.geojson.Point
+import com.protokollnull.api.MindatLocation
 
 @Composable
 fun MapScreen() {
     var mapStyle by remember { mutableStateOf(Style.MAPBOX_STREETS) }
-    var markerPosition by remember { mutableStateOf<Pair<Double, Double>?>(null) }
+    var locations by remember { mutableStateOf<List<MindatLocation>>(emptyList()) }
 
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        // 🔍 Suchleiste
-        SearchBar { query ->
-            // Dummy: egal was eingegeben wird -> Marker in Zürich
-            markerPosition = Pair(47.3769, 8.5417)
+    Column(modifier = Modifier.fillMaxSize()) {
+        SearchBar { results ->
+            locations = results
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
@@ -34,30 +27,26 @@ fun MapScreen() {
                 Modifier.fillMaxSize(),
                 style = mapStyle
             ) {
-                // Marker anzeigen, falls gesetzt
-                markerPosition?.let { (lat, lon) ->
-                    PointAnnotation(point = com.mapbox.geojson.Point.fromLngLat(lon, lat)) {
-                        Text("Fundstelle")
+                // Marker für Fundorte
+                locations.forEach { loc ->
+                    if (loc.latitude != null && loc.longitude != null) {
+                        PointAnnotation(point = Point.fromLngLat(loc.longitude, loc.latitude)) {
+                            Text(loc.name)
+                        }
                     }
                 }
             }
 
-            // Buttons für Kartenstile
+            // Layer Switcher
             Row(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(12.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Button(onClick = { mapStyle = Style.MAPBOX_STREETS }) {
-                    Text("Standard")
-                }
-                Button(onClick = { mapStyle = Style.SATELLITE_STREETS }) {
-                    Text("Satellit")
-                }
-                Button(onClick = { mapStyle = Style.OUTDOORS }) {
-                    Text("Gelände")
-                }
+                Button(onClick = { mapStyle = Style.MAPBOX_STREETS }) { Text("Standard") }
+                Button(onClick = { mapStyle = Style.SATELLITE_STREETS }) { Text("Satellit") }
+                Button(onClick = { mapStyle = Style.OUTDOORS }) { Text("Gelände") }
             }
         }
     }
